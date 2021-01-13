@@ -212,13 +212,13 @@ Repository.prototype._commitAllEvents = function _commitEvents (entities, sessio
 
 };
 
-Repository.prototype._commitSnapshots = function _commitSnapshots (entity, options, cb) {
+Repository.prototype._commitSnapshots = function _commitSnapshots (entity, session, options, cb) {
   var self = this;
 
   if (options.forceSnapshot || entity.version >= entity.snapshotVersion + self.snapshotFrequency) {
     var snapshot = entity.snapshot();
     if (snapshot && snapshot._id) delete snapshot._id; // mongo will blow up if we try to insert multiple _id keys
-    self.snapshots.insertOne(snapshot, function (err) {
+    self.snapshots.insertOne(snapshot, {session}, function (err) {
       if (err) return cb(err);
       log('committed %s.snapshot for id %s %j', self.entityType.name, entity.id, snapshot);
       return cb(null, entity);
