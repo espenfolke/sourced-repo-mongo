@@ -44,19 +44,22 @@ function Repository (entityType, options) {
 util.inherits(Repository, EventEmitter);
 
 Repository.prototype.commit = function commit (entity, options, cb) {
+  let session
   if (typeof options === 'function') {
     cb = options;
     options = {};
+  } else {
+    session = options.session || {}
   }
 
   var self = this;
 
   log('committing %s for id %s', this.entityType.name, entity.id);
 
-  this._commitEvents(entity, function _afterCommitEvents (err) {
+  this._commitEvents(entity, session, function _afterCommitEvents (err) {
     if (err) return cb(err);
 
-    self._commitSnapshots(entity, options, function _afterCommitSnapshots (err) {
+    self._commitSnapshots(entity, session, options, function _afterCommitSnapshots (err) {
       if (err) return cb(err);
       self._emitEvents(entity);
       return cb();
@@ -69,15 +72,17 @@ Repository.prototype.commitAll = function commit (entities, options, cb) {
   if (typeof options === 'function') {
     cb = options;
     options = {};
+  } else {
+    session = options.session || {}
   }
 
   var self = this;
 
   log('committing %s for id %j', this.entityType.name, _.map(entities, 'id'));
 
-  this._commitAllEvents(entities, function _afterCommitEvents (err) {
+  this._commitAllEvents(entities, session, function _afterCommitEvents (err) {
     if (err) return cb(err);
-    self._commitAllSnapshots(entities, options, function _afterCommitSnapshots (err) {
+    self._commitAllSnapshots(entities, session, options, function _afterCommitSnapshots (err) {
       if (err) return cb(err);
       entities.forEach(function (entity) {
         self._emitEvents(entity);
@@ -151,7 +156,7 @@ Repository.prototype.getAll = function getAll (ids, cb) {
   });
 };
 
-Repository.prototype._commitEvents = function _commitEvents (entity, cb) {
+Repository.prototype._commitEvents = function _commitEvents (entity, session, cb) {
   var self = this;
 
   if (entity.newEvents.length === 0) return cb();
@@ -165,7 +170,7 @@ Repository.prototype._commitEvents = function _commitEvents (entity, cb) {
       event[index] = entity[index];
     });
   });
-  self.events.insertMany(events, function (err) {
+  self.events.insertMany(events, session, function (err) {
     if (err) return cb(err);
     log('committed %s.events for id %s', self.entityType.name, entity.id);
     entity.newEvents = [];
@@ -174,7 +179,7 @@ Repository.prototype._commitEvents = function _commitEvents (entity, cb) {
 
 };
 
-Repository.prototype._commitAllEvents = function _commitEvents (entities, cb) {
+Repository.prototype._commitAllEvents = function _commitEvents (entities, session, cb) {
   var self = this;
 
   var events = [];
@@ -195,7 +200,7 @@ Repository.prototype._commitAllEvents = function _commitEvents (entities, cb) {
 
   if (events.length === 0) return cb();
 
-  self.events.insertMany(events, function (err) {
+  self.events.insertMany(events, session, function (err) {
     if (err) return cb(err);
     log('committed %s.events for ids %j', self.entityType.name, _.map(entities, 'id'));
     entities.forEach(function (entity) {
@@ -223,7 +228,7 @@ Repository.prototype._commitSnapshots = function _commitSnapshots (entity, optio
 
 };
 
-Repository.prototype._commitAllSnapshots = function _commitAllSnapshots (entities, options, cb) {
+Repository.prototype._commitAllSnapshots = function _commitAllSnapshots (entities, session, options, cb) {
   var self = this;
 
   var snapshots = [];
@@ -239,7 +244,7 @@ Repository.prototype._commitAllSnapshots = function _commitAllSnapshots (entitie
 
   if (snapshots.length === 0) return cb();
 
-  self.snapshots.insertMany(snapshots, function (err) {
+  self.snapshots.insertMany(snapshots, session, function (err) {
     if (err) return cb(err);
     log('committed %s.snapshot for ids %s %j', self.entityType.name, _.map(entities, 'id'), snapshots);
     return cb(null, entities);
