@@ -165,8 +165,6 @@ Repository.prototype._commitEvents = function _commitEvents (entity, session, cb
   if ( ! entity.id) return cb(new Error('Cannot commit an entity of type [%s] without an [id] property', this.entityType));
 
   var events = entity.newEvents;
-  events.push({ method: 'commit', timestamp: Date.now() })
-  
   events.forEach(function _applyIndices (event) {
     if (event && event._id) delete event._id; // mongo will blow up if we try to insert multiple _id keys
     self.indices.forEach(function (index) {
@@ -192,8 +190,6 @@ Repository.prototype._commitAllEvents = function _commitEvents (entities, sessio
     if ( ! entity.id) return cb(new Error('Cannot commit an entity of type [%s] without an [id] property', self.entityType));
 
     var evnts = entity.newEvents;
-    evnts.push({ method: 'commit', timestamp: Date.now() })
-
     evnts.forEach(function _applyIndices (event) {
       if (event && event._id) delete event._id; // mongo will blow up if we try to insert multiple _id keys
       self.indices.forEach(function (index) {
