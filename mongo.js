@@ -25,8 +25,11 @@ Mongo.prototype.connect = function connect (mongoUrl, database, options = {
   var self = this;
   return new Promise((resolve, reject) => {
     self.on('connected', (db) => {
-      this.connect = true;
+      self.connect = true
       resolve(db)
+    })
+    self.on('close', (db) => {
+      self.connect = false
     })
     self.on('error', (err) => {
       reject(err)
@@ -52,8 +55,6 @@ Mongo.prototype.close = function (cb) {
   log('closing sourced mongo connection');
   return this.client.close((err) => {
     log('closed sourced mongo connection');
-    this.connected = false;
-    if (err) this.connected = true;
     cb(err)
   });
 };
