@@ -8,10 +8,15 @@ var util = require('util');
 function Mongo () {
   this.client = null;
   this.db = null;
+  this.connected = false;
   EventEmitter.call(this);
 }
 
 util.inherits(Mongo, EventEmitter);
+
+Mongo.prototype.isConnected = function () {
+  return this.connected;
+}
 
 Mongo.prototype.connect = function connect (mongoUrl, database, options = {
   useNewUrlParser: true,
@@ -20,6 +25,7 @@ Mongo.prototype.connect = function connect (mongoUrl, database, options = {
   var self = this;
   return new Promise((resolve, reject) => {
     self.on('connected', (db) => {
+      this.connect = true;
       resolve(db)
     })
     self.on('error', (err) => {
@@ -46,6 +52,8 @@ Mongo.prototype.close = function (cb) {
   log('closing sourced mongo connection');
   return this.client.close((err) => {
     log('closed sourced mongo connection');
+    this.connected = false;
+    if (err) this.connected = true;
     cb(err)
   });
 };
