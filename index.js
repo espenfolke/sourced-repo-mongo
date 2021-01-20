@@ -173,7 +173,9 @@ Repository.prototype._commitEvents = function _commitEvents (entity, session, cb
       event[index] = entity[index];
     });
   });
-  self.events.insertMany(events, {session}, function (err) {
+  let options = {}
+  if (session) options.session = session
+  self.events.insertMany(events, options, function (err) {
     if (err) return cb(err);
     log('committed %s.events for id %s', self.entityType.name, entity.id);
     entity.newEvents = [];
@@ -205,7 +207,9 @@ Repository.prototype._commitAllEvents = function _commitEvents (entities, sessio
 
   if (events.length === 0) return cb();
 
-  self.events.insertMany(events, {session}, function (err) {
+  let options = {}
+  if (session) options.session = session
+  self.events.insertMany(events, options, function (err) {
     if (err) return cb(err);
     log('committed %s.events for ids %j', self.entityType.name, _.map(entities, 'id'));
     entities.forEach(function (entity) {
@@ -222,7 +226,10 @@ Repository.prototype._commitSnapshots = function _commitSnapshots (entity, sessi
   if (options.forceSnapshot || entity.version >= entity.snapshotVersion + self.snapshotFrequency) {
     var snapshot = entity.snapshot();
     if (snapshot && snapshot._id) delete snapshot._id; // mongo will blow up if we try to insert multiple _id keys
-    self.snapshots.insertOne(snapshot, {session}, function (err) {
+
+    let options = {}
+    if (session) options.session = session
+    self.snapshots.insertOne(snapshot, options, function (err) {
       if (err) return cb(err);
       log('committed %s.snapshot for id %s %j', self.entityType.name, entity.id, snapshot);
       return cb(null, entity);
@@ -249,7 +256,9 @@ Repository.prototype._commitAllSnapshots = function _commitAllSnapshots (entitie
 
   if (snapshots.length === 0) return cb();
 
-  self.snapshots.insertMany(snapshots, {session}, function (err) {
+  let options = {}
+  if (session) options.session = session
+  self.snapshots.insertMany(snapshots, options, function (err) {
     if (err) return cb(err);
     log('committed %s.snapshot for ids %s %j', self.entityType.name, _.map(entities, 'id'), snapshots);
     return cb(null, entities);
