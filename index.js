@@ -173,14 +173,22 @@ Repository.prototype._commitEvents = function _commitEvents (entity, session, cb
       event[index] = entity[index];
     });
   });
-  let opts = {}
-  if (session) opts.session = session
-  self.events.insertMany(events, opts, function (err) {
-    if (err) return cb(err);
-    log('committed %s.events for id %s', self.entityType.name, entity.id);
-    entity.newEvents = [];
-    return cb();
-  });
+
+  if (session) {
+    self.events.insertMany(events, {session}, function (err) {
+      if (err) return cb(err);
+      log('committed %s.events for id %s', self.entityType.name, entity.id);
+      entity.newEvents = [];
+      return cb();
+    });
+  } else {
+    self.events.insertMany(events, function (err) {
+      if (err) return cb(err);
+      log('committed %s.events for id %s', self.entityType.name, entity.id);
+      entity.newEvents = [];
+      return cb();
+    });
+  }
 
 };
 
@@ -207,16 +215,26 @@ Repository.prototype._commitAllEvents = function _commitEvents (entities, sessio
 
   if (events.length === 0) return cb();
 
-  let opts = {}
-  if (session) opts.session = session
-  self.events.insertMany(events, opts, function (err) {
-    if (err) return cb(err);
-    log('committed %s.events for ids %j', self.entityType.name, _.map(entities, 'id'));
-    entities.forEach(function (entity) {
-      entity.newEvents = [];
+  if (session) {
+    self.events.insertMany(events, {session}, function (err) {
+      if (err) return cb(err);
+      log('committed %s.events for ids %j', self.entityType.name, _.map(entities, 'id'));
+      entities.forEach(function (entity) {
+        entity.newEvents = [];
+      });
+      return cb();
     });
-    return cb();
-  });
+  } else {
+    self.events.insertMany(events, function (err) {
+      if (err) return cb(err);
+      log('committed %s.events for ids %j', self.entityType.name, _.map(entities, 'id'));
+      entities.forEach(function (entity) {
+        entity.newEvents = [];
+      });
+      return cb();
+    });
+  }
+
 
 };
 
@@ -227,13 +245,20 @@ Repository.prototype._commitSnapshots = function _commitSnapshots (entity, sessi
     var snapshot = entity.snapshot();
     if (snapshot && snapshot._id) delete snapshot._id; // mongo will blow up if we try to insert multiple _id keys
 
-    let opts = {}
-    if (session) opts.session = session
-    self.snapshots.insertOne(snapshot, opts, function (err) {
-      if (err) return cb(err);
-      log('committed %s.snapshot for id %s %j', self.entityType.name, entity.id, snapshot);
-      return cb(null, entity);
-    });
+    if (session) {
+      self.snapshots.insertOne(snapshot, {session}, function (err) {
+        if (err) return cb(err);
+        log('committed %s.snapshot for id %s %j', self.entityType.name, entity.id, snapshot);
+        return cb(null, entity);
+      });
+    } else {
+      self.snapshots.insertOne(snapshot, function (err) {
+        if (err) return cb(err);
+        log('committed %s.snapshot for id %s %j', self.entityType.name, entity.id, snapshot);
+        return cb(null, entity);
+      });
+    }
+
   } else {
     return cb(null, entity);
   }
@@ -256,14 +281,19 @@ Repository.prototype._commitAllSnapshots = function _commitAllSnapshots (entitie
 
   if (snapshots.length === 0) return cb();
 
-  let opts = {}
-  if (session) opts.session = session
-  self.snapshots.insertMany(snapshots, opts, function (err) {
-    if (err) return cb(err);
-    log('committed %s.snapshot for ids %s %j', self.entityType.name, _.map(entities, 'id'), snapshots);
-    return cb(null, entities);
-  });
-
+  if (session) {
+    self.snapshots.insertMany(snapshots, {session}, function (err) {
+      if (err) return cb(err);
+      log('committed %s.snapshot for ids %s %j', self.entityType.name, _.map(entities, 'id'), snapshots);
+      return cb(null, entities);
+    });  
+  } else {
+    self.snapshots.insertMany(snapshots, function (err) {
+      if (err) return cb(err);
+      log('committed %s.snapshot for ids %s %j', self.entityType.name, _.map(entities, 'id'), snapshots);
+      return cb(null, entities);
+    });
+  }
 };
 
 Repository.prototype._deserialize = function _deserialize (id, snapshot, events) {
