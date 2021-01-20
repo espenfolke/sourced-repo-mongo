@@ -51,7 +51,7 @@ describe('Repository', function () {
         });
       });
     });
-    mongo.connect('mongodb://127.0.0.1:27017/sourced');
+    mongo.connect('mongodb://127.0.0.1:27018/sourced');
   });
 
   afterAll(function (done) {
